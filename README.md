@@ -6,13 +6,13 @@ A command-line tool in C that checks whether the brackets in an expression are b
 ![Tests](https://img.shields.io/badge/tests-37%20checks-brightgreen)
 ![Language](https://img.shields.io/badge/language-C11-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
-![Status](https://img.shields.io/badge/status-complete-success)
+![Status](https://img.shields.io/badge/status-complete%20(learning%20project)-success)
 
 ![Terminal demo](screenshots/demo.gif)
 
 ## Why I built this
 
-I started this as a learning project to practise data structures in C. Checking brackets is the classic problem a stack solves, and doing it in C meant writing the stack myself: a linked list, every `malloc` matched with a `free`, and code split into a header and a source file.
+I built this for my Data Structures course. We had covered stacks in theory, and I wanted to see one work in practice on a real problem. Checking brackets is the classic case a stack solves, and doing it in C meant writing the stack myself: a linked list, every `malloc` matched with a `free`, and code split into a header and a source file.
 
 The first version worked, but it was rough. It called `exit(1)` from inside the stack code, read input with `scanf("%s")` (so `(a + b)` was cut off at the first space), and leaked memory when it stopped early. Fixing those became the more interesting part of the project, so I added tests, memory checks and CI to make sure they stay fixed.
 
