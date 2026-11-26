@@ -1,3 +1,4 @@
 bracket_checker
 tests/test_stack
 *.o
+tests/test_stack_san

@@ -16,3 +16,4 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y valgrind
       - run: make test CC=${{ matrix.cc }}
       - run: make valgrind CC=${{ matrix.cc }}
+      - run: make sanitize CC=${{ matrix.cc }}

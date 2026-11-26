@@ -1,6 +1,7 @@
 #include "../stack.h"
 
 #include <stdio.h>
+#include <string.h>
 
 static int failures = 0;
 static int checks = 0;
@@ -70,12 +71,42 @@ static void test_stack_is_reusable_after_early_exit(void) {
     DestroyStack(s);
 }
 
+static void test_error_position(void) {
+    Stack s = CreateStack();
+    size_t pos = 99;
+
+    CHECK(CheckBrackets(s, "{[a + b)]", &pos) == NOT_BALANCED && pos == 7);
+    CHECK(CheckBrackets(s, ")", &pos) == NOT_BALANCED && pos == 0);
+    CHECK(CheckBrackets(s, "(a + b", &pos) == NOT_BALANCED && pos == strlen("(a + b"));
+    pos = 99;
+    CHECK(CheckBrackets(s, "(ok)", &pos) == BALANCED && pos == 99);
+    CHECK(CheckBrackets(s, "(]", NULL) == NOT_BALANCED);
+    DestroyStack(s);
+}
+
+static void test_deep_nesting(void) {
+    enum { DEPTH = 100000 };
+    static char expr[2 * DEPTH + 1];
+    Stack s = CreateStack();
+
+    memset(expr, '(', DEPTH);
+    memset(expr + DEPTH, ')', DEPTH);
+    expr[2 * DEPTH] = '\0';
+    CHECK(AreParenthesesBalanced(s, expr) == BALANCED);
+    expr[2 * DEPTH - 1] = ']';
+    CHECK(AreParenthesesBalanced(s, expr) == NOT_BALANCED);
+    CHECK(IsEmptyStack(s));
+    DestroyStack(s);
+}
+
 int main(void) {
     test_push_pop_order();
     test_empty_stack_errors();
     test_make_empty();
     test_balanced_expressions();
     test_stack_is_reusable_after_early_exit();
+    test_error_position();
+    test_deep_nesting();
 
     if (failures > 0) {
         fprintf(stderr, "%d of %d checks failed\n", failures, checks);

@@ -1,6 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
+#include <stddef.h>
+
 /* Status codes returned by stack operations. */
 #define STACK_OK 0
 #define STACK_EMPTY (-1)
@@ -35,5 +37,9 @@ int IsMatchingPair(char open, char close);
 /* Checks (), [] and {}; other characters are ignored. The stack is cleared
  * before and after the check. Returns BALANCED, NOT_BALANCED or CHECK_ERROR. */
 int AreParenthesesBalanced(Stack s, const char* expr);
+/* Same as AreParenthesesBalanced. On NOT_BALANCED, stores in *error_pos
+ * (if not NULL) the index of the first unmatched closing bracket, or
+ * strlen(expr) when an opening bracket is never closed. */
+int CheckBrackets(Stack s, const char* expr, size_t* error_pos);
 
 #endif /* STACK_H */

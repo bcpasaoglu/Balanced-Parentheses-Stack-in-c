@@ -71,11 +71,12 @@ int IsMatchingPair(char open, char close) {
            (open == '[' && close == ']');
 }
 
-int AreParenthesesBalanced(Stack s, const char* expr) {
+int CheckBrackets(Stack s, const char* expr, size_t* error_pos) {
     int result = BALANCED;
+    size_t pos = 0;
     MakeEmptyStack(s);
 
-    for (const char* p = expr; *p != '\0'; p++) {
+    for (const char* p = expr; *p != '\0'; p++, pos++) {
         char ch = *p;
         if (ch == '(' || ch == '{' || ch == '[') {
             if (PushStack(ch, s) != STACK_OK) {
@@ -91,9 +92,17 @@ int AreParenthesesBalanced(Stack s, const char* expr) {
         }
     }
 
+    /* Unclosed brackets are reported at the end of the input. */
     if (result == BALANCED && !IsEmptyStack(s)) {
         result = NOT_BALANCED;
     }
+    if (result == NOT_BALANCED && error_pos != NULL) {
+        *error_pos = pos;
+    }
     MakeEmptyStack(s);
     return result;
+}
+
+int AreParenthesesBalanced(Stack s, const char* expr) {
+    return CheckBrackets(s, expr, NULL);
 }
