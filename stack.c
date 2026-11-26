@@ -1,93 +1,99 @@
 #include "stack.h"
-#include <stdio.h>
+
 #include <stdlib.h>
 
-Stack CreateStack() {
-    Stack s=malloc(sizeof(StackRecord));
-
-    if (s==NULL) {
-        printf("Memory Allocation Failed!\n");
-        exit(1);
+Stack CreateStack(void) {
+    Stack s = malloc(sizeof(StackRecord));
+    if (s == NULL) {
+        return NULL;
     }
-    s->next=NULL;
+    s->next = NULL;
     return s;
 }
+
+void DestroyStack(Stack s) {
+    if (s == NULL) {
+        return;
+    }
+    MakeEmptyStack(s);
+    free(s);
+}
+
 void MakeEmptyStack(Stack s) {
-    Stack temp;
     while (!IsEmptyStack(s)) {
-        temp=s->next;
-        s->next=temp->next;
+        Stack temp = s->next;
+        s->next = temp->next;
         free(temp);
     }
 }
 
 int IsEmptyStack(Stack s) {
-    return s->next==NULL;
+    return s->next == NULL;
 }
 
-void PushStack(char x, Stack s) {
-    Stack temp=malloc(sizeof(StackRecord));
+int PushStack(char x, Stack s) {
+    Stack temp = malloc(sizeof(StackRecord));
     if (temp == NULL) {
-        printf("Memory allocation failed!\n");
-        exit(1);
+        return STACK_NO_MEMORY;
     }
-    temp->next=s->next;
-    temp->val=x;
-    s->next=temp;
+    temp->val = x;
+    temp->next = s->next;
+    s->next = temp;
+    return STACK_OK;
 }
 
-char PopStack(Stack s) {
-    Stack temp;
-    if (s->next==NULL) {
-        printf("Stack is empty!\n");
-        exit(1);
-
+int PopStack(Stack s, char* out) {
+    if (IsEmptyStack(s)) {
+        return STACK_EMPTY;
     }
-    temp=s->next;
-    char ch=temp->val;
-    s->next=temp->next;
+    Stack temp = s->next;
+    if (out != NULL) {
+        *out = temp->val;
+    }
+    s->next = temp->next;
     free(temp);
-    return ch;
-
+    return STACK_OK;
 }
 
-char TopOfStack(Stack s) {
-    if (s->next==NULL) {
-        printf("Stack is empty\n");
-        exit(1);
+int TopOfStack(Stack s, char* out) {
+    if (IsEmptyStack(s)) {
+        return STACK_EMPTY;
     }
-    return s->next->val;
+    if (out != NULL) {
+        *out = s->next->val;
+    }
+    return STACK_OK;
 }
 
 int IsMatchingPair(char open, char close) {
-    if (open=='(' && close ==')') {
-        return 1;
-    }
-    if (open=='{' && close =='}') {
-        return 1;
-    }
-    if (open=='[' && close ==']') {
-        return 1;
-    }
-    return 0;
+    return (open == '(' && close == ')') ||
+           (open == '{' && close == '}') ||
+           (open == '[' && close == ']');
 }
 
-int AreParenthesesBalanced(Stack s,char* expr) {
-    for (int i = 0; expr[i] != '\0'; i++) {
-        char ch = expr[i];
+int AreParenthesesBalanced(Stack s, const char* expr) {
+    int result = BALANCED;
+    MakeEmptyStack(s);
 
+    for (const char* p = expr; *p != '\0'; p++) {
+        char ch = *p;
         if (ch == '(' || ch == '{' || ch == '[') {
-            PushStack(ch, s);
-        }
-        else if (ch == ')' || ch == '}' || ch == ']') {
-            if (IsEmptyStack(s)) {
-                return 0;
+            if (PushStack(ch, s) != STACK_OK) {
+                result = CHECK_ERROR;
+                break;
             }
-            char top = PopStack(s);
-            if (!IsMatchingPair(top, ch)) {
-                return 0;
+        } else if (ch == ')' || ch == '}' || ch == ']') {
+            char top;
+            if (PopStack(s, &top) != STACK_OK || !IsMatchingPair(top, ch)) {
+                result = NOT_BALANCED;
+                break;
             }
         }
     }
-    return IsEmptyStack(s);
+
+    if (result == BALANCED && !IsEmptyStack(s)) {
+        result = NOT_BALANCED;
+    }
+    MakeEmptyStack(s);
+    return result;
 }

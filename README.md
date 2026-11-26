@@ -1,5 +1,7 @@
 # Balanced Parentheses Stack in C
 
+[![CI](https://github.com/bcpasaoglu/Balanced-Parentheses-Stack-in-c/actions/workflows/ci.yml/badge.svg)](https://github.com/bcpasaoglu/Balanced-Parentheses-Stack-in-c/actions/workflows/ci.yml)
+
 This is a small C project that checks whether the brackets in a given expression are balanced.
 
 The project uses a stack data structure implemented with a linked list. It was created as a learning project to practice basic data structures, dynamic memory allocation, and separating code into header and source files.
@@ -34,58 +36,36 @@ Unbalanced examples:
 
 ```txt
 .
-├── main.c
-├── stack.c
-└── stack.h
+├── main.c              CLI: checks arguments or one line from stdin
+├── stack.c / stack.h   Linked-list stack and the bracket checker
+├── tests/test_stack.c  Unit tests
+└── Makefile
 ```
 
-## Files
-
-### main.c
-
-Contains the main program logic. It reads input from the user and calls the function that checks whether the expression is balanced.
-
-### stack.c
-
-Contains the stack implementation. It includes functions for push, pop, checking the top element, and checking whether the stack is empty.
-
-### stack.h
-
-Contains the stack structure and function declarations.
-
-## How to Compile
-
-You can compile the project with GCC:
+## Build, Test and Run
 
 ```bash
-gcc main.c stack.c -o parentheses_checker
-```
-
-## How to Run
-
-On Linux or macOS:
-
-```bash
-./parentheses_checker
-```
-
-On Windows:
-
-```bash
-parentheses_checker.exe
-```
-
-## Example Usage
-
-```txt
-Enter an expression: {[a+b]*(c-d)}
-Balanced
+make            # builds ./bracket_checker with -Wall -Wextra -Wpedantic -Werror
+make test       # unit tests + CLI smoke tests
+make valgrind   # unit tests under valgrind, fails on any leak
 ```
 
 ```txt
-Enter an expression: {[a+b)*(c-d)}
-Not Balanced
+$ ./bracket_checker "{[a + b] * (c - d)}" "(a + b"
+{[a + b] * (c - d)}: balanced
+(a + b: NOT balanced
+
+$ echo "{[a+b)*(c-d)}" | ./bracket_checker
+Enter expression: {[a+b)*(c-d)}: NOT balanced
 ```
+
+Exit codes: `0` balanced, `1` not balanced, `2` error (out of memory or no input), so the tool can be used in scripts.
+
+## Design Notes
+
+- **No `exit()` inside the library.** Stack functions return status codes (`STACK_OK`, `STACK_EMPTY`, `STACK_NO_MEMORY`) and pass values through out-parameters, so the caller decides how to handle errors.
+- **No leaks on early exit.** The checker clears the stack before and after each run, so a mismatched expression never leaves nodes behind. CI runs the tests under valgrind with gcc and clang.
+- **Whole-line input.** Input is read with `fgets` instead of `scanf("%s")`, which stopped at the first space and could overflow the buffer.
 
 ## Concepts Practiced
 
