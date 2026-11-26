@@ -1,85 +1,112 @@
-# Bracket Validator in C
+# bracket-validator-c
+
+A command-line tool in C that checks whether the brackets in an expression are balanced and, when they are not, tells you where it went wrong.
 
 [![CI](https://github.com/bcpasaoglu/Balanced-Parentheses-Stack-in-c/actions/workflows/ci.yml/badge.svg)](https://github.com/bcpasaoglu/Balanced-Parentheses-Stack-in-c/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-37%20checks-brightgreen)
+![Language](https://img.shields.io/badge/language-C11-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+![Status](https://img.shields.io/badge/status-complete-success)
 
-A small command-line tool in C11 that checks whether the brackets in an expression are balanced and, if not, points to the first offending character.
+![Terminal demo](screenshots/demo.gif)
 
-It is built on a linked-list stack written from scratch, with status-code based error handling, unit tests, and CI that runs every build under `-Werror`, valgrind, and AddressSanitizer/UBSan on both gcc and clang.
+## Why I built this
 
-## What It Does
+I started this as a learning project to practise data structures in C. Checking brackets is the classic problem a stack solves, and doing it in C meant writing the stack myself: a linked list, every `malloc` matched with a `free`, and code split into a header and a source file.
 
-The program checks each expression given as an argument, or one line read from standard input, and reports whether its brackets are correctly opened and closed. Other characters are ignored.
+The first version worked, but it was rough. It called `exit(1)` from inside the stack code, read input with `scanf("%s")` (so `(a + b)` was cut off at the first space), and leaked memory when it stopped early. Fixing those became the more interesting part of the project, so I added tests, memory checks and CI to make sure they stay fixed.
 
-Supported bracket types:
+## Features
 
-```txt
-()
-[]
-{}
-```
+- Checks `()`, `[]` and `{}`; every other character is ignored.
+- Points to the first problem: the position of an unexpected closing bracket, or an opening bracket that is never closed.
+- Takes expressions as arguments, or reads one line of any length from standard input.
+- Exit codes for scripts: `0` balanced, `1` not balanced, `2` error.
+- No memory leaks, including when the check stops early. Verified with valgrind and AddressSanitizer.
 
-Balanced examples:
+## Example runs
 
-```txt
-(a + b)
-{[a + b] * (c - d)}
-```
-
-Unbalanced examples:
-
-```txt
-(a + b
-{[a + b)]
-```
-
-## Project Structure
-
-```txt
-.
-├── main.c              CLI: checks arguments or one line from stdin
-├── stack.c / stack.h   Linked-list stack and the bracket checker
-├── tests/test_stack.c  Unit tests
-└── Makefile
-```
-
-## Build, Test and Run
-
-```bash
-make            # builds ./bracket_checker with -Wall -Wextra -Wpedantic -Werror
-make test       # unit tests + CLI smoke tests
-make valgrind   # unit tests under valgrind, fails on any leak
-make sanitize   # unit tests built with AddressSanitizer + UBSan
-```
-
-```txt
-$ ./bracket_checker "{[a + b] * (c - d)}" "(a + b"
+```console
+$ ./bracket_checker "{[a + b] * (c - d)}"
 {[a + b] * (c - d)}: balanced
+
+$ ./bracket_checker "{[a + b)]" "(a + b"
+{[a + b)]: NOT balanced (unexpected ')' at position 7)
 (a + b: NOT balanced (unclosed bracket at end of input)
 
-$ echo "{[a+b)*(c-d)}" | ./bracket_checker
-Enter expression: {[a+b)*(c-d)}: NOT balanced (unexpected ')' at position 5)
+$ echo "f(x[i]) + g{y}" | ./bracket_checker
+Enter expression: f(x[i]) + g{y}: balanced
+
+$ ./bracket_checker "(]" ; echo "exit code: $?"
+(]: NOT balanced (unexpected ']' at position 1)
+exit code: 1
 ```
 
-Exit codes: `0` balanced, `1` not balanced, `2` error (out of memory or no input), so the tool can be used in scripts.
+Positions start at 0. With several arguments, the exit code is the worst result among them.
 
-## How It Works
+## How it works
 
-Scan the expression left to right. Push every opening bracket. On a closing bracket, pop and check that it matches; an empty stack or a mismatch means the expression is not balanced, and the current index is the error position. At the end the stack must be empty, otherwise an opening bracket was never closed.
+The expression is scanned once, left to right:
 
-- Time: O(n) for an expression of length n.
-- Space: O(d), where d is the maximum nesting depth (one heap node per open bracket).
+1. An opening bracket is pushed onto the stack.
+2. A closing bracket pops the top of the stack. If the stack is empty, or the popped bracket is not the matching type, the expression is not balanced and the current index is reported.
+3. At the end, the stack must be empty. If it is not, some bracket was never closed.
 
-## Design Notes
+```
+input:  {  [  a  +  b  )  ]
+index:  0  1  2  3  4  5  6
 
-- **No `exit()` inside the library.** Stack functions return status codes (`STACK_OK`, `STACK_EMPTY`, `STACK_NO_MEMORY`) and pass values through out-parameters, so the caller decides how to handle errors.
-- **No leaks on early exit.** The checker clears the stack before and after each run, so a mismatched expression never leaves nodes behind. CI runs the tests under valgrind with gcc and clang.
-- **Whole-line input of any length.** Standard input is read into a growing buffer instead of `scanf("%s")`, which stopped at the first space and could overflow a fixed buffer.
-- **Tested edge cases.** Empty input, stray closing brackets, wrong bracket type, unclosed brackets, error positions, reuse of the stack after an early exit, and 100,000 levels of nesting.
+'{'  push        stack: {
+'['  push        stack: { [
+')'  pop '['     '[' does not match ')'  ->  NOT balanced at position 5
+```
 
-## Concepts Practiced
+This runs in **O(n)** time for an expression of length n, and uses **O(d)** extra memory, where d is the deepest nesting level.
 
-- Stack data structure on a singly linked list (header-node design)
-- Dynamic memory allocation and leak-free error paths
-- API design with status codes and out-parameters
-- Header and source file separation, Makefile builds
-- Unit testing and continuous integration for C
+The stack is a singly linked list with a header node: `s->next` is the top. Push and pop both work at the head, so they are O(1) and never need to move other elements.
+
+```
+stack.h / stack.c   stack type, push/pop/top, CheckBrackets()
+main.c              CLI: arguments or one line from stdin, exit codes
+tests/test_stack.c  unit tests
+Makefile            build, test, valgrind and sanitizer targets
+```
+
+## Build and run
+
+You need a C11 compiler (gcc or clang) and `make`. Valgrind is optional.
+
+```bash
+git clone https://github.com/bcpasaoglu/Balanced-Parentheses-Stack-in-c.git
+cd Balanced-Parentheses-Stack-in-c
+
+make                 # builds ./bracket_checker
+./bracket_checker "{[()]}"
+
+make test            # unit tests + CLI smoke tests
+make valgrind        # unit tests under valgrind, fails on any leak
+make sanitize        # unit tests built with AddressSanitizer + UBSan
+```
+
+Everything is compiled with `-std=c11 -Wall -Wextra -Wpedantic -Werror`, so a new warning breaks the build. CI runs all of the above with both gcc and clang on every push and pull request.
+
+![make test and make valgrind output](screenshots/tests.png)
+
+## Technical decisions
+
+- **Status codes instead of `exit()`.** Library code should not end the program. `PushStack`, `PopStack` and `TopOfStack` return `STACK_OK`, `STACK_EMPTY` or `STACK_NO_MEMORY` and hand values back through out-parameters, so the caller decides what an error means. Running out of memory, for example, is reported as exit code `2` instead of a crash.
+- **A linked list instead of an array.** It never needs resizing, and it was the point of the exercise. The cost is one `malloc` per opening bracket. A growing array would be faster for very deep input, which is the first thing I would change if speed mattered.
+- **The stack is cleared before and after every check.** When a mismatch stops the scan early, the remaining nodes are freed right away. The same stack can be reused for the next expression, and there is a test for exactly that case.
+- **Reading input into a growing buffer.** `scanf("%s")` stopped at spaces and could overflow a fixed buffer. The CLI now reads characters into a buffer that doubles when full, so line length has no limit.
+- **Tests that run without any framework.** A small `CHECK` macro counts failures and keeps going, so one run shows every broken case. The tests include edge cases such as an empty string, a lone `)`, mixed types like `(]`, and 100,000 levels of nesting.
+
+## Known limitations
+
+- Brackets inside string literals or comments are counted too, so `printf("(");` is reported as not balanced.
+- Only `()`, `[]` and `{}` are recognised. Angle brackets are ignored.
+- Positions are byte offsets, so with multi-byte UTF-8 characters they do not match the visible column.
+- Standard input is read as a single line. To check several expressions, pass them as arguments.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
