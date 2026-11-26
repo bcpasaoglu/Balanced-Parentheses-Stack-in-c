@@ -6,7 +6,7 @@ A command-line tool in C that checks whether the brackets in an expression are b
 ![Tests](https://img.shields.io/badge/tests-37%20checks-brightgreen)
 ![Language](https://img.shields.io/badge/language-C11-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
-![Status](https://img.shields.io/badge/status-complete%20(learning%20project)-success)
+![Status](https://img.shields.io/badge/status-complete%20%28learning%20project%29-success)
 
 ![Terminal demo](screenshots/demo.gif)
 
